@@ -13,11 +13,18 @@ import Toast from 'react-native-toast-message';
 
 import contactUs from "../../assets/contactUs.gif";
 
+// const API_URL = 'http://192.168.1.6:5000'
+const API_URL = 'https://contacto-backend.vercel.app'
+
+
 const Home = () => {
+
 
   const dispatch = useDispatch(); // Redux
 
   var contact = useSelector(selectContactData);
+
+  console.log(contact);
 
   const [name, setName] = useState(null);
   const [email, setEmail] = useState(null);
@@ -30,17 +37,71 @@ const Home = () => {
   //   setPhone(User.phone);
   // }, [User])
 
-  const save_Name = async () => {
+  var nameFormat = /^[a-zA-Z]+$/;
+  var emailFormat = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/;
+  var phoneFormat = /^\d{10}/;
 
-    contact = { ...contact, name: name };
+  const submitForm = async () => {
 
-    dispatch(setContactData(contact));
+    if (name && email && phone && message) {
 
-    Toast.show({
-      type: 'success',
-      text1: 'Name',
-      text2: 'Name successfully added 😍️'
-    });
+      if (!name.match(nameFormat)) {
+        Toast.show({
+          type: 'error',
+          text1: 'Name',
+          text2: 'Name not Valid 👋'
+        });
+      }
+      else if (!email.match(emailFormat)) {
+        Toast.show({
+          type: 'error',
+          text1: 'Email',
+          text2: 'Please check your email 👋'
+        });
+      }
+      else if (!phone.match(phoneFormat)) {
+        Toast.show({
+          type: 'error',
+          text1: 'Phone',
+          text2: 'Please check your phone no 👋'
+        });
+      }
+      else {
+        contact = { ...contact, name: name, email: email, phone: phone, message: message };
+        dispatch(setContactData(contact));
+
+        const response = await fetch(`${API_URL}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(contact),
+        })
+
+        const result = await response.json();
+
+        if (result.decision == "success") {
+          Toast.show({
+            type: 'success',
+            text1: 'Form Submited ',
+            text2: 'Thanks for contacting us!! 😍️'
+          });
+        }
+        else {
+          Toast.show({
+            type: 'error',
+            text1: 'Techinal error',
+            text2: 'Please try again!! 👋'
+          });
+        }
+
+      }
+    }
+    else {
+      Toast.show({
+        type: 'error',
+        text1: 'Fields Empty',
+        text2: 'Please fill all Fields 👋'
+      });
+    }
 
 
   }
@@ -241,7 +302,9 @@ const Home = () => {
               borderRadius: SPACING * 3,
               flexDirection: "row",
               alignItems: "center",
-            }}>
+            }}
+              onPress={() => submitForm()}
+            >
 
               <Ionicons
                 style={{
